@@ -11,6 +11,7 @@ permissions:
 
 jobs:
   build:
+    name: Build APK
     runs-on: ubuntu-latest
 
     steps:
@@ -23,21 +24,38 @@ jobs:
           distribution: temurin
           java-version: '17'
 
-      - name: Set up Gradle 8.9
-        uses: gradle/actions/setup-gradle@v4
-        with:
-          gradle-version: '8.9'
-
       - name: Set up Android SDK
         uses: android-actions/setup-android@v3
 
       - name: Install Android SDK
         run: |
+          yes | sdkmanager --licenses || true
+          sdkmanager "platform-tools"
           sdkmanager "platforms;android-35"
           sdkmanager "build-tools;35.0.0"
 
-      - name: Build APK
-        run: gradle :app:assembleDebug --stacktrace
+      - name: Set up Gradle 8.9
+        uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: '8.9'
+
+      - name: Check project structure
+        run: |
+          echo "===== ROOT ====="
+          ls -la
+          echo "===== APP ====="
+          ls -la app || true
+          echo "===== GRADLE TASKS ====="
+          gradle tasks --all --no-daemon
+
+      - name: Build Debug APK
+        run: |
+          gradle :app:assembleDebug --no-daemon --stacktrace
+
+      - name: Check APK
+        run: |
+          echo "===== APK OUTPUT ====="
+          find app/build/outputs -type f -name "*.apk" -print
 
       - name: Upload APK
         uses: actions/upload-artifact@v4
